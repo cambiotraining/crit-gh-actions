@@ -1,0 +1,68 @@
+# File: actions/quarto-deploy-action/action.yml
+name: "Quarto Book Deployment"
+description: "Render the main branch, merge in existing archives, update dropdowns, and deploy to gh-pages"
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout main branch
+      uses: actions/checkout@v4
+      with:
+        ref: main
+
+    - name: Setup Quarto
+      uses: quarto-dev/quarto-actions/setup@v2
+
+    - name: Optional pre-render commands
+      if: ${{ inputs.pre_render != '' }}
+      run: ${{ inputs.pre_render }}
+      shell: bash
+
+    - name: Render main branch
+      run: quarto render
+      shell: bash
+
+    - name: Checkout existing archive from gh-pages
+      uses: actions/checkout@v4
+      with:
+        ref: gh-pages
+        path: gh-pages-archive
+        sparse-checkout: |
+          archive
+        sparse-checkout-cone-mode: false
+      continue-on-error: true
+
+    - name: Copy archive to _site
+      run: |
+        if [ -d "gh-pages-archive/archive" ]; then
+          cp -r gh-pages-archive/archive _site/
+          echo "Copied existing archive to _site"
+        else
+          mkdir -p _site/archive
+        fi
+      shell: bash
+
+    - name: Update dropdowns and versions pages
+      run: python ${GITHUB_ACTION_PATH}/update-dropdown.py ${{ github.event.repository.name }}
+      shell: bash
+
+    - name: No Jekyll
+      run: touch _site/.nojekyll
+      shell: bash
+
+    - name: Deploy to gh-pages
+      uses: JamesIves/github-pages-deploy-action@4.1.0
+      with:
+        branch: gh-pages
+        folder: _site
+        single-commit: true
+        force: true
+
+inputs:
+  pre_render:
+    description: "Optional commands to run before rendering"
+    required: false
+    default: ""
+  post_render:
+    description: "Optional commands to run after rendering"
+    required: false
+    default: ""
