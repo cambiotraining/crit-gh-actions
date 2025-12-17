@@ -22,6 +22,7 @@ runs:
       shell: bash
 
     - name: Checkout existing archive from gh-pages
+      if: ${{ inputs.enable_archive == 'true' }}
       uses: actions/checkout@v4
       with:
         ref: gh-pages
@@ -32,6 +33,7 @@ runs:
       continue-on-error: true
 
     - name: Copy archive to _site
+      if: ${{ inputs.enable_archive == 'true' }}
       run: |
         if [ -d "gh-pages-archive/archive" ]; then
           cp -r gh-pages-archive/archive _site/
@@ -42,6 +44,7 @@ runs:
       shell: bash
 
     - name: Update dropdowns and versions pages
+      if: ${{ inputs.enable_archive == 'true' }}
       run: python ${GITHUB_ACTION_PATH}/update-dropdown.py ${{ github.event.repository.name }}
       shell: bash
 
@@ -66,3 +69,7 @@ inputs:
     description: "Optional commands to run after rendering"
     required: false
     default: ""
+  enable_archive:
+    description: "Whether to include archived versions and version dropdowns"
+    required: false
+    default: "true"
