@@ -244,13 +244,18 @@ Warning
         if 'id="deprecation-warning"' in content:
             return True
 
-        # Inject warning right after the main content tag
-        content = re.sub(
-            r"(<main class=\"content\" id=\"quarto-document-content\">)",
+        # Inject warning right after the main content tag. Quarto may add
+        # attributes such as tabindex to the opening <main> tag.
+        content, replacements = re.subn(
+            r'(<main\b[^>]*\bid="quarto-document-content"[^>]*>)',
             r"\1" + warning_html,
             content,
             count=1,
         )
+
+        if replacements == 0:
+            print(f"⚠ Could not find main content tag in {file_path}")
+            return False
 
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
